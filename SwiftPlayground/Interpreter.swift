@@ -491,7 +491,7 @@ final class Interpreter {
     func run(_ code: String) throws {
         let tokens = try Lexer(code).tokenize()
         let stmts = try Parser(tokens).parseProgram()
-        scopes = [[String: Value]]()
+        scopes = [[String: Value]()]
         funcs = [:]
         steps = 0
         output = []
