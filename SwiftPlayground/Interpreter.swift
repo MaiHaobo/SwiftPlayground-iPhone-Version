@@ -474,7 +474,7 @@ final class Parser {
 
 final class Interpreter {
     private(set) var output: [ConsoleLine] = []
-    private var scopes: [[String: Value]] = [[]]
+    private var scopes: [[String: Value]] = [[String: Value]()]
     private var funcs: [String: FuncDecl] = [:]
     private var steps = 0
     private let maxSteps = 500_000
