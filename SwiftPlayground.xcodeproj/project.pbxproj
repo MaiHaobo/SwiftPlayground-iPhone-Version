@@ -13,6 +13,8 @@
 		7B0000040000000000000004 /* Interpreter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000040000000000000004 /* Interpreter.swift */; };
 		7B0000050000000000000005 /* Samples.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000050000000000000005 /* Samples.swift */; };
 		7B0000060000000000000006 /* ViewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000060000000000000006 /* ViewRenderer.swift */; };
+		7B00000070000000000000007 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A00000070000000000000007 /* SessionStore.swift */; };
+		7B00000080000000000000008 /* Tabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A00000080000000000000008 /* Tabs.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,6 +25,8 @@
 		7A0000050000000000000005 /* Samples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Samples.swift; sourceTree = "<group>"; };
 		7A0000060000000000000006 /* ViewRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewRenderer.swift; sourceTree = "<group>"; };
 		7A0000100000000000000010 /* SwiftPlayground.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SwiftPlayground.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7A00000070000000000000007 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
+		7A00000080000000000000008 /* Tabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tabs.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -65,6 +69,8 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+				7A00000070000000000000007 /* SessionStore.swift */,
+				7A00000080000000000000008 /* Tabs.swift */,
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -130,6 +136,8 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+				7B00000070000000000000007 /* SessionStore.swift in Sources */,
+				7B00000080000000000000008 /* Tabs.swift in Sources */,
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */

@@ -1,34 +1,19 @@
 import SwiftUI
 
-// MARK: - 代码编辑器 + 控制台 + Live View 预览
+// MARK: - 代码编辑器 + 控制台（Live View 在「预览」Tab）
 
 struct PlaygroundEditor: View {
     let doc: PlaygroundDocument
+    @EnvironmentObject var session: SessionStore
     @State private var code: String = ""
     @State private var lines: [ConsoleLine] = []
     @State private var autoRun = true
-    @State private var tab = 0            // 0 = 代码, 1 = 预览
-    @State private var liveNode: ViewNode?
-    @State private var interpreter: Interpreter?
 
     var body: some View {
         GeometryReader { geo in
             VStack(spacing: 0) {
-                Picker("视图", selection: $tab) {
-                    Text("代码").tag(0)
-                    Text("预览").tag(1)
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-
-                if tab == 0 {
-                    codeEditor
-                        .frame(height: geo.size.height * 0.52)
-                } else {
-                    previewPane
-                        .frame(height: geo.size.height * 0.52)
-                }
+                codeEditor
+                    .frame(height: geo.size.height * 0.62)
                 Divider()
                 consoleSection
             }
@@ -37,14 +22,6 @@ struct PlaygroundEditor: View {
         .navigationTitle(doc.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    tab = (tab == 0 ? 1 : 0)
-                } label: {
-                    Image(systemName: tab == 0 ? "rectangle.on.rectangle" : "pencil.line")
-                        .tint(.accentColor)
-                }
-            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     run()
@@ -81,32 +58,6 @@ struct PlaygroundEditor: View {
                 .scrollContentBackground(.hidden)
                 .foregroundColor(.clear)
                 .padding(.top, 10)
-        }
-        .background(Color(.systemBackground))
-    }
-
-    // MARK: Live View 预览
-
-    private var previewPane: some View {
-        ScrollView {
-            if let node = liveNode {
-                ViewRenderer(node: node) { id in
-                    try? interpreter?.tapButton(id)
-                }
-                .padding(16)
-                .frame(maxWidth: .infinity)
-            } else {
-                VStack(spacing: 10) {
-                    Image(systemName: "macwindow.on.rectangle")
-                        .font(.largeTitle)
-                        .foregroundColor(.secondary)
-                    Text("在代码里调用 setLiveView(视图) 后，实时预览会显示在这里")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(.top, 60)
-            }
         }
         .background(Color(.systemBackground))
     }
@@ -167,13 +118,14 @@ struct PlaygroundEditor: View {
     }
 
     private func run() {
+        session.title = doc.title
         let interp = Interpreter()
         interp.liveViewHandler = { node in
             DispatchQueue.main.async {
-                self.liveNode = node
+                self.session.liveNode = node
             }
         }
-        self.interpreter = interp
+        self.session.interpreter = interp
         do {
             try interp.run(code)
             lines = interp.output
