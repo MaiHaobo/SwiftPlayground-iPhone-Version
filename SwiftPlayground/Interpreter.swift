@@ -149,7 +149,16 @@ final class Lexer {
 
     private func lexNumber() throws -> Double {
         var s = ""
-        while !eof, cur.isNumber || cur == "." { s.append(advance()) }
+        while !eof {
+            if cur.isNumber {
+                s.append(advance())
+            } else if cur == "." && !s.contains(".") && next != "." {
+                // 只允许一个小数点，且不能是 ".." 范围运算符
+                s.append(advance())
+            } else {
+                break
+            }
+        }
         guard let v = Double(s) else { throw PlayError(message: "非法数字：\(s)") }
         return v
     }
