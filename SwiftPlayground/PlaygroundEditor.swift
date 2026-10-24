@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - 代码编辑器 + 控制台（Live View 在「预览」Tab）
 
@@ -43,23 +44,12 @@ struct PlaygroundEditor: View {
         }
     }
 
-    // MARK: 编辑器（高亮层 + 透明输入层）
+    // MARK: 编辑器（系统 UITextView 单层富文本，光标天然对齐）
 
     private var codeEditor: some View {
-        ZStack(alignment: .topLeading) {
-            highlightText(code)
-                .font(.system(size: 14, design: .monospaced))
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .padding(.top, 14)
-                .padding(.leading, 16)
-                .allowsHitTesting(false)
-            TextEditor(text: $code)
-                .font(.system(size: 14, design: .monospaced))
-                .scrollContentBackground(.hidden)
-                .foregroundColor(.clear)
-                .padding(.top, 10)
-        }
-        .background(Color(.systemBackground))
+        CodeEditorView(code: $code)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(.systemBackground))
     }
 
     // MARK: 控制台
@@ -135,78 +125,128 @@ struct PlaygroundEditor: View {
             lines = out
         }
     }
+}
 
-    // MARK: 语法高亮
+// MARK: - 语法高亮（NSAttributedString）
 
-    private func highlightText(_ source: String) -> Text {
-        let keywords: Set<String> = [
-            "var", "let", "func", "if", "else", "for", "in", "while",
-            "return", "break", "continue", "true", "false", "import", "print",
-            "VStack", "HStack", "ZStack", "Text", "Button", "Circle", "Rectangle",
-            "setLiveView", "Spacer", "Divider"
-        ]
+enum Highlighter {
+    static let keywords: Set<String> = [
+        "var", "let", "func", "if", "else", "for", "in", "while",
+        "return", "break", "continue", "true", "false", "import", "print",
+        "VStack", "HStack", "ZStack", "Text", "Button", "Circle", "Rectangle",
+        "setLiveView", "Spacer", "Divider"
+    ]
+
+    static func highlight(_ source: String) -> NSAttributedString {
+        let result = NSMutableAttributedString()
         let ls = source.components(separatedBy: "\n")
-        var out = Text("")
         for (idx, line) in ls.enumerated() {
-            out = out + highlightLine(line, keywords: keywords)
-            if idx < ls.count - 1 { out = out + Text("\n") }
+            result.append(highlightLine(line))
+            if idx < ls.count - 1 {
+                result.append(NSAttributedString(string: "\n"))
+            }
         }
-        return out
+        return result
     }
 
-    private func highlightLine(_ line: String, keywords: Set<String>) -> Text {
+    private static func highlightLine(_ line: String) -> NSAttributedString {
+        let font = UIFont.monospacedSystemFont(ofSize: 14, weight: .regular)
         if line.trimmingCharacters(in: .whitespaces).hasPrefix("//") {
-            return Text(line).foregroundColor(.secondary)
+            return NSAttributedString(string: line, attributes: [
+                .font: font, .foregroundColor: UIColor.secondaryLabel
+            ])
         }
-        var result = Text("")
+        let result = NSMutableAttributedString()
         var word = ""
         var isInString = false
         var strText = ""
 
+        func append(_ s: String, _ color: UIColor) {
+            result.append(NSAttributedString(string: s, attributes: [
+                .font: font, .foregroundColor: color
+            ]))
+        }
+
         func flushWord() {
             guard !word.isEmpty else { return }
             if keywords.contains(word) {
-                result = result + Text(word).foregroundColor(.pink)
+                append(word, .systemPink)
             } else if Double(word) != nil {
-                result = result + Text(word).foregroundColor(.orange)
+                append(word, .systemOrange)
             } else {
-                result = result + Text(word).foregroundColor(.primary)
+                append(word, .label)
             }
             word = ""
         }
 
-        let chars = Array(line)
-        var i = 0
-        while i < chars.count {
-            let c = chars[i]
+        for c in line {
             if isInString {
                 strText.append(c)
                 if c == "\"" {
-                    result = result + Text(strText).foregroundColor(.green)
+                    append(strText, .systemGreen)
                     strText = ""
                     isInString = false
                 }
-                i += 1
                 continue
             }
             if c == "\"" {
                 flushWord()
                 isInString = true
                 strText = String(c)
-                i += 1
                 continue
             }
             if c.isLetter || c.isNumber || c == "_" || c == "$" {
                 word.append(c)
-                i += 1
                 continue
             }
             flushWord()
-            result = result + Text(String(c)).foregroundColor(.secondary)
-            i += 1
+            append(String(c), .secondaryLabel)
         }
-        if isInString { result = result + Text(strText).foregroundColor(.green) }
+        if isInString { append(strText, .systemGreen) }
         flushWord()
         return result
+    }
+}
+
+// MARK: - 系统文本视图编辑器（单层，杜绝光标错位）
+
+struct CodeEditorView: UIViewRepresentable {
+    @Binding var code: String
+
+    func makeUIView(context: Context) -> UITextView {
+        let tv = UITextView()
+        tv.font = UIFont.monospacedSystemFont(ofSize: 14, weight: .regular)
+        tv.backgroundColor = .clear
+        tv.autocorrectionType = .no
+        tv.autocapitalizationType = .none
+        tv.smartQuotesType = .no
+        tv.smartDashesType = .no
+        tv.textContainerInset = UIEdgeInsets(top: 14, left: 12, bottom: 8, right: 12)
+        tv.delegate = context.coordinator
+        tv.attributedText = Highlighter.highlight(code)
+        return tv
+    }
+
+    func updateUIView(_ tv: UITextView, context: Context) {
+        if tv.text != code {
+            tv.attributedText = Highlighter.highlight(code)
+        }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject, UITextViewDelegate {
+        var parent: CodeEditorView
+        init(_ parent: CodeEditorView) { self.parent = parent }
+
+        func textViewDidChange(_ tv: UITextView) {
+            parent.code = tv.text
+            // 保存并恢复光标，避免刷新高亮时跳到开头
+            let sel = tv.selectedRange
+            tv.attributedText = Highlighter.highlight(tv.text)
+            if sel.location <= (tv.text as NSString).length {
+                tv.selectedRange = sel
+            }
+        }
     }
 }
