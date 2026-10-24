@@ -99,10 +99,10 @@ struct PlaygroundEditor: View {
                 VStack(spacing: 10) {
                     Image(systemName: "macwindow.on.rectangle")
                         .font(.largeTitle)
-                        .foregroundStyle(.tertiary)
+                        .foregroundColor(.secondary)
                     Text("在代码里调用 setLiveView(视图) 后，实时预览会显示在这里")
                         .font(.footnote)
-                        .foregroundStyle(.tertiary)
+                        .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 60)
@@ -144,7 +144,7 @@ struct PlaygroundEditor: View {
                         if lines.isEmpty {
                             Text("点击右上角 ▶ 运行，输出会显示在这里")
                                 .font(.system(.footnote, design: .monospaced))
-                                .foregroundStyle(.tertiary)
+                                .foregroundColor(.secondary)
                         }
                         ForEach(lines) { line in
                             Text(line.text)
@@ -204,7 +204,7 @@ struct PlaygroundEditor: View {
 
     private func highlightLine(_ line: String, keywords: Set<String>) -> Text {
         if line.trimmingCharacters(in: .whitespaces).hasPrefix("//") {
-            return Text(line).foregroundStyle(.tertiary)
+            return Text(line).foregroundColor(.secondary)
         }
         var result = Text("")
         var word = ""
