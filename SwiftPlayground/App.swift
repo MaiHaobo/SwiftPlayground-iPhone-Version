@@ -5,7 +5,6 @@ struct SwiftPlaygroundApp: App {
     var body: some Scene {
         WindowGroup {
             PlaygroundsHome()
-                .preferredColorScheme(.dark)
         }
     }
 }

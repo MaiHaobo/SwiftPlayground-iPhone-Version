@@ -65,59 +65,39 @@ extension PlaygroundDocument {
     ]
 }
 
-// MARK: - 首页
+// MARK: - 首页（系统原生列表，自动适配液态玻璃）
 
 struct PlaygroundsHome: View {
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("我的游乐场")
-                        .font(.title3.bold())
-                        .foregroundStyle(.primary)
-                        .padding(.horizontal)
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-                        ForEach(PlaygroundDocument.samples) { doc in
-                            NavigationLink(value: doc) {
-                                card(doc)
+            List {
+                Section {
+                    ForEach(PlaygroundDocument.samples) { doc in
+                        NavigationLink(value: doc) {
+                            HStack(spacing: 14) {
+                                Image(systemName: doc.icon)
+                                    .font(.title3)
+                                    .foregroundStyle(doc.color)
+                                    .frame(width: 34)
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(doc.title)
+                                        .font(.body)
+                                    Text(doc.subtitle)
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
-                            .buttonStyle(.plain)
+                            .padding(.vertical, 2)
                         }
                     }
-                    .padding(.horizontal)
-                    Text("本 App 内置了一个 Swift 子集解释器，支持 print、变量、函数、循环、数组、字符串插值等常用语法，写完代码点 ▶ 即可运行。")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal)
+                } footer: {
+                    Text("内置 Swift 子集解释器，支持 print、变量、函数、循环、数组、字符串插值、闭包与 Live View 实时预览，写完代码点 ▶ 即可运行。")
                 }
-                .padding(.vertical)
             }
-            .background(Color(white: 0.07).ignoresSafeArea())
             .navigationTitle("SwiftPlayground")
             .navigationDestination(for: PlaygroundDocument.self) { doc in
                 PlaygroundEditor(doc: doc)
             }
         }
-    }
-
-    private func card(_ doc: PlaygroundDocument) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Image(systemName: doc.icon)
-                .font(.title2)
-                .foregroundStyle(.white)
-                .frame(width: 44, height: 44)
-                .background(doc.color.gradient, in: RoundedRectangle(cornerRadius: 10))
-            Text(doc.title)
-                .font(.subheadline.bold())
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-            Text(doc.subtitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(Color(white: 0.14), in: RoundedRectangle(cornerRadius: 14))
     }
 }

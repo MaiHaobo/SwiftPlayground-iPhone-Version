@@ -33,7 +33,7 @@ struct PlaygroundEditor: View {
                 consoleSection
             }
         }
-        .background(Color(white: 0.11).ignoresSafeArea())
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
         .navigationTitle(doc.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -42,7 +42,7 @@ struct PlaygroundEditor: View {
                     tab = (tab == 0 ? 1 : 0)
                 } label: {
                     Image(systemName: tab == 0 ? "rectangle.on.rectangle" : "pencil.line")
-                        .foregroundStyle(.cyan)
+                        .tint(.accentColor)
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
@@ -50,7 +50,7 @@ struct PlaygroundEditor: View {
                     run()
                 } label: {
                     Image(systemName: "play.fill")
-                        .foregroundStyle(.cyan)
+                        .tint(.accentColor)
                 }
             }
         }
@@ -82,7 +82,7 @@ struct PlaygroundEditor: View {
                 .foregroundColor(.clear)
                 .padding(.top, 10)
         }
-        .background(Color(white: 0.13))
+        .background(Color(.systemBackground))
     }
 
     // MARK: Live View 预览
@@ -99,16 +99,16 @@ struct PlaygroundEditor: View {
                 VStack(spacing: 10) {
                     Image(systemName: "macwindow.on.rectangle")
                         .font(.largeTitle)
-                        .foregroundColor(Color(white: 0.4))
+                        .foregroundStyle(.tertiary)
                     Text("在代码里调用 setLiveView(视图) 后，实时预览会显示在这里")
                         .font(.footnote)
-                        .foregroundColor(Color(white: 0.4))
+                        .foregroundStyle(.tertiary)
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 60)
             }
         }
-        .background(Color(white: 0.13))
+        .background(Color(.systemBackground))
     }
 
     // MARK: 控制台
@@ -144,7 +144,7 @@ struct PlaygroundEditor: View {
                         if lines.isEmpty {
                             Text("点击右上角 ▶ 运行，输出会显示在这里")
                                 .font(.system(.footnote, design: .monospaced))
-                                .foregroundColor(Color(white: 0.4))
+                                .foregroundStyle(.tertiary)
                         }
                         ForEach(lines) { line in
                             Text(line.text)
@@ -163,7 +163,7 @@ struct PlaygroundEditor: View {
                 }
             }
         }
-        .background(Color(white: 0.09))
+        .background(Color(.secondarySystemGroupedBackground))
     }
 
     private func run() {
@@ -204,7 +204,7 @@ struct PlaygroundEditor: View {
 
     private func highlightLine(_ line: String, keywords: Set<String>) -> Text {
         if line.trimmingCharacters(in: .whitespaces).hasPrefix("//") {
-            return Text(line).foregroundColor(Color(white: 0.45))
+            return Text(line).foregroundStyle(.tertiary)
         }
         var result = Text("")
         var word = ""
@@ -218,7 +218,7 @@ struct PlaygroundEditor: View {
             } else if Double(word) != nil {
                 result = result + Text(word).foregroundColor(.orange)
             } else {
-                result = result + Text(word).foregroundColor(.white)
+                result = result + Text(word).foregroundColor(.primary)
             }
             word = ""
         }
@@ -250,7 +250,7 @@ struct PlaygroundEditor: View {
                 continue
             }
             flushWord()
-            result = result + Text(String(c)).foregroundColor(Color(white: 0.75))
+            result = result + Text(String(c)).foregroundStyle(.secondary)
             i += 1
         }
         if isInString { result = result + Text(strText).foregroundColor(.green) }

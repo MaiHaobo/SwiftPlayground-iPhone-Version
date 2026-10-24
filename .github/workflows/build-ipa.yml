@@ -7,13 +7,18 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 选择 Xcode 版本
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app || true
+      - name: 选择最新版 Xcode（带 iOS 26 SDK / 液态玻璃）
+        run: |
+          ls /Applications | grep Xcode || true
+          XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "使用 $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
 
       - name: 编译（iPhone 真机架构，未签名）
         run: |
