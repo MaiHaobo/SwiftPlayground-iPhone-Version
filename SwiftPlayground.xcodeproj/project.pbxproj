@@ -1,0 +1,249 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		7B0000010000000000000001 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000010000000000000001 /* App.swift */; };
+		7B0000020000000000000002 /* PlaygroundsHome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000020000000000000002 /* PlaygroundsHome.swift */; };
+		7B0000030000000000000003 /* PlaygroundEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000030000000000000003 /* PlaygroundEditor.swift */; };
+		7B0000040000000000000004 /* Interpreter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000040000000000000004 /* Interpreter.swift */; };
+		7B0000050000000000000005 /* Samples.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000050000000000000005 /* Samples.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		7A0000010000000000000001 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
+		7A0000020000000000000002 /* PlaygroundsHome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundsHome.swift; sourceTree = "<group>"; };
+		7A0000030000000000000003 /* PlaygroundEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundEditor.swift; sourceTree = "<group>"; };
+		7A0000040000000000000004 /* Interpreter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Interpreter.swift; sourceTree = "<group>"; };
+		7A0000050000000000000005 /* Samples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Samples.swift; sourceTree = "<group>"; };
+		7A0000100000000000000010 /* SwiftPlayground.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SwiftPlayground.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		7D0000020000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		7C0000010000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				7C0000020000000000000002 /* SwiftPlayground */,
+				7C0000030000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		7C0000020000000000000002 /* SwiftPlayground */ = {
+			isa = PBXGroup;
+			children = (
+				7A0000010000000000000001 /* App.swift */,
+				7A0000020000000000000002 /* PlaygroundsHome.swift */,
+				7A0000030000000000000003 /* PlaygroundEditor.swift */,
+				7A0000040000000000000004 /* Interpreter.swift */,
+				7A0000050000000000000005 /* Samples.swift */,
+			);
+			path = SwiftPlayground;
+			sourceTree = "<group>";
+		};
+		7C0000030000000000000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				7A0000100000000000000010 /* SwiftPlayground.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		7E0000010000000000000001 /* SwiftPlayground */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 700000020000000000000002 /* Build configuration list for PBXNativeTarget "SwiftPlayground" */;
+			buildPhases = (
+				7D0000010000000000000001 /* Sources */,
+				7D0000020000000000000002 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SwiftPlayground;
+			productName = SwiftPlayground;
+			productReference = 7A0000100000000000000010 /* SwiftPlayground.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		7F0000010000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					7E0000010000000000000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = 700000010000000000000001 /* Build configuration list for PBXProject "SwiftPlayground" */;
+			developmentRegion = zh;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				zh,
+				Base,
+			);
+			mainGroup = 7C0000010000000000000001;
+			productRefGroup = 7C0000030000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				7E0000010000000000000001 /* SwiftPlayground */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		7D0000010000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7B0000010000000000000001 /* App.swift in Sources */,
+				7B0000020000000000000002 /* PlaygroundsHome.swift in Sources */,
+				7B0000030000000000000003 /* PlaygroundEditor.swift in Sources */,
+				7B0000040000000000000004 /* Interpreter.swift in Sources */,
+				7B0000050000000000000005 /* Samples.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		710000010000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		710000020000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		710000030000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Swift游乐场";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.maihaobo.SwiftPlayground;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		710000040000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Swift游乐场";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.maihaobo.SwiftPlayground;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		700000010000000000000001 /* Build configuration list for PBXProject "SwiftPlayground" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				710000010000000000000001 /* Debug */,
+				710000020000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		700000020000000000000002 /* Build configuration list for PBXNativeTarget "SwiftPlayground" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				710000030000000000000003 /* Debug */,
+				710000040000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 7F0000010000000000000001 /* Project object */;
+}
