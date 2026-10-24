@@ -37,7 +37,7 @@ struct PlaygroundEditor: View {
             }
         }
         .onChange(of: code) { newValue in
-            doc.storedCode = newValue
+            doc.saveCode(newValue)
             if autoRun { run() }
         }
     }

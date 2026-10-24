@@ -1,0 +1,32 @@
+name: 解码导入项目文件
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 解码 Base64 并解压
+        run: |
+          base64 -di payload.b64 > payload.zip
+          unzip -o payload.zip -d .
+          rm -f payload.zip payload.b64
+          echo "=== 导入的文件 ==="
+          find . -type f -not -path "./.git/*" | sort
+
+      - name: 提交并推送
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && echo "没有变更" || git commit -m "通过 Base64 导入 Xcode 工程文件"
+          git push

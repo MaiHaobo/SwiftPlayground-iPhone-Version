@@ -11,7 +11,10 @@ struct PlaygroundDocument: Identifiable, Hashable {
 
     var storedCode: String {
         get { UserDefaults.standard.string(forKey: "code_" + id) ?? defaultCode }
-        set { UserDefaults.standard.set(newValue, forKey: "code_" + id) }
+    }
+
+    func saveCode(_ newCode: String) {
+        UserDefaults.standard.set(newCode, forKey: "code_" + id)
     }
 }
 

@@ -9,7 +9,7 @@ struct PlayError: Error, CustomStringConvertible {
 
 // MARK: - 控制台输出行
 
-struct ConsoleLine: Identifiable {
+struct ConsoleLine: Identifiable, Equatable {
     let id = UUID()
     let text: String
     let isError: Bool
@@ -482,7 +482,7 @@ final class Interpreter {
     func run(_ code: String) throws {
         let tokens = try Lexer(code).tokenize()
         let stmts = try Parser(tokens).parseProgram()
-        scopes = [[]]
+        scopes = [[String: Value]]()
         funcs = [:]
         steps = 0
         output = []
@@ -669,8 +669,14 @@ final class Interpreter {
     }
 
     private func evalBinary(_ op: String, _ lExpr: Expr, _ rExpr: Expr) throws -> Value {
-        if op == "&&" { return .bool(try eval(lExpr).truthy() && try eval(rExpr).truthy()) }
-        if op == "||" { return .bool(try eval(lExpr).truthy() || try eval(rExpr).truthy()) }
+        if op == "&&" {
+            if !(try eval(lExpr).truthy()) { return .bool(false) }
+            return .bool(try eval(rExpr).truthy())
+        }
+        if op == "||" {
+            if try eval(lExpr).truthy() { return .bool(true) }
+            return .bool(try eval(rExpr).truthy())
+        }
         if op == "..<" || op == "..." {
             guard case .int(let a) = try eval(lExpr), case .int(let b) = try eval(rExpr) else {
                 throw PlayError(message: "范围两端必须是 Int")
