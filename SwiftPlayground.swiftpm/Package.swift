@@ -1,16 +1,16 @@
 // swift-tools-version:5.8
-// Swift Playground App — 仅支持在 iPhone 上运行
+// SwiftPlayground — 专为 iPhone 打造的 Swift 游乐场
 
 import PackageDescription
 
 let package = Package(
-    name: "MyPlayground",
+    name: "SwiftPlayground",
     platforms: [
         .iOS("16.0")
     ],
     products: [
         .iOSApplication(
-            name: "MyPlayground",
+            name: "SwiftPlayground",
             targets: ["AppModule"],
             displayVersion: "1.0",
             bundleVersion: "1",

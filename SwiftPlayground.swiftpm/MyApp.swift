@@ -13,7 +13,8 @@ struct MyApp: App {
 struct RootView: View {
     var body: some View {
         if UIDevice.current.userInterfaceIdiom == .phone {
-            ContentView()
+            PlaygroundsHome()
+                .preferredColorScheme(.dark)
         } else {
             UnsupportedDeviceView()
         }
@@ -29,9 +30,10 @@ struct UnsupportedDeviceView: View {
                 .foregroundStyle(.secondary)
             Text("仅支持 iPhone")
                 .font(.title2.bold())
-            Text("请在 iPhone 上打开本 App 才能体验完整功能。")
+            Text("本 App 是专为 iPhone 打造的 Swift 游乐场，请在 iPhone 上打开。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
         .padding()
     }
