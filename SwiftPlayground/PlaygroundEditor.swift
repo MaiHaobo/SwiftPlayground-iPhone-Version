@@ -250,7 +250,7 @@ struct PlaygroundEditor: View {
                 continue
             }
             flushWord()
-            result = result + Text(String(c)).foregroundStyle(.secondary)
+            result = result + Text(String(c)).foregroundColor(.secondary)
             i += 1
         }
         if isInString { result = result + Text(strText).foregroundColor(.green) }
