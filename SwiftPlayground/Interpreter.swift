@@ -15,6 +15,34 @@ struct ConsoleLine: Identifiable, Equatable {
     let isError: Bool
 }
 
+// MARK: - 视图树节点（解释器产出，SwiftUI 渲染）
+
+final class ViewNode {
+    enum Kind {
+        case text(String)
+        case stack(axis: String, children: [ViewNode])   // v / h / z
+        case shape(String, Int?)                          // circle / rect
+        case button(String, Int)                          // label, handlerId
+        case spacer
+        case divider
+    }
+    var kind: Kind
+    var font: String?
+    var color: String?
+    var bg: String?
+    var padding = false
+    var spacing: Int?
+
+    init(kind: Kind) { self.kind = kind }
+}
+
+// MARK: - 作用域（引用类型，闭包可捕获并修改变量）
+
+final class Scope {
+    var vars: [String: Value] = [:]
+    init(_ d: [String: Value] = [:]) { vars = d }
+}
+
 // MARK: - 运行时值
 
 enum Value {
@@ -25,6 +53,9 @@ enum Value {
     case array([Value])
     case range(Int, Int, closed: Bool)
     case function(FuncDecl)
+    case closure([String], [Stmt], Scope)
+    case view(ViewNode)
+    case enumCase(String)
     case void
 
     var typeName: String {
@@ -35,7 +66,9 @@ enum Value {
         case .bool: return "Bool"
         case .array: return "Array"
         case .range: return "Range"
-        case .function: return "Function"
+        case .function, .closure: return "Function"
+        case .view: return "View"
+        case .enumCase: return "EnumCase"
         case .void: return "Void"
         }
     }
@@ -83,9 +116,12 @@ indirect enum Expr {
     case bool(Bool)
     case ident(String)
     case arrayLit([Expr])
+    case closureLit([String], [Stmt])
+    case enumCase(String)
     case unary(String, Expr)
     case binary(String, Expr, Expr)
     case call(String, [Expr])
+    case invoke(Expr, [Expr])
     case method(Expr, String, [Expr])
     case member(Expr, String)
 }
@@ -131,7 +167,7 @@ final class Lexer {
                 toks.append(Token(kind: .num(try lexNumber()))); continue
             }
             if c == "\"" { toks.append(Token(kind: .str(try lexString()))); continue }
-            if c.isLetter || c == "_" { toks.append(Token(kind: .ident(lexIdent()))); continue }
+            if c.isLetter || c == "_" || c == "$" { toks.append(Token(kind: .ident(lexIdent()))); continue }
             let three = String(c) + String(next) + String(i + 2 < src.count ? src[i + 2] : "\0")
             if three == "..." { i += 3; toks.append(Token(kind: .op("..."))); continue }
             let two = String(c) + String(next)
@@ -153,7 +189,6 @@ final class Lexer {
             if cur.isNumber {
                 s.append(advance())
             } else if cur == "." && !s.contains(".") && next != "." {
-                // 只允许一个小数点，且不能是 ".." 范围运算符
                 s.append(advance())
             } else {
                 break
@@ -165,12 +200,12 @@ final class Lexer {
 
     private func lexIdent() -> String {
         var s = ""
-        while !eof, cur.isLetter || cur.isNumber || cur == "_" { s.append(advance()) }
+        while !eof, cur.isLetter || cur.isNumber || cur == "_" || cur == "$" { s.append(advance()) }
         return s
     }
 
     private func lexString() throws -> [StrPart] {
-        advance() // 跳过开头引号
+        advance()
         var parts: [StrPart] = []
         var lit = ""
         while !eof {
@@ -219,6 +254,11 @@ final class Parser {
         "return", "break", "continue", "true", "false", "import"
     ]
 
+    // 支持尾随闭包的视图构造器
+    private let viewTypes: Set<String> = ["VStack", "HStack", "ZStack", "Group", "Button"]
+    // 支持尾随闭包的数组方法
+    private let closureMethods: Set<String> = ["map", "filter", "reduce"]
+
     private var cur: Token { toks[p] }
     private var isEOF: Bool { if case .eof = cur.kind { return true }; return false }
     private func advance() -> Token { let t = toks[p]; if p < toks.count - 1 { p += 1 }; return t }
@@ -237,7 +277,7 @@ final class Parser {
         case .num(let n): return "\(n)"
         case .str: return "字符串"
         case .ident(let v): return v
-        case .op(let v): return v == "\n" ? "换行" : v
+        case .op(let v): return v
         case .newline: return "换行"
         case .eof: return "结尾"
         }
@@ -376,6 +416,54 @@ final class Parser {
         return stmts
     }
 
+    // MARK: 闭包字面量 { params in body } / { expr }
+
+    private func parseClosure() throws -> Expr {
+        _ = advance() // {
+        eatNewlines()
+        var params: [String] = []
+
+        if isOp("(") {
+            _ = advance(); eatNewlines()
+            while !isOp(")") {
+                params.append(try expectIdent())
+                if isOp(",") { _ = advance(); eatNewlines() }
+            }
+            _ = advance(); eatNewlines()
+            guard case .ident(let w) = advance().kind, w == "in" else {
+                throw PlayError(message: "闭包参数列表后需要 «in»")
+            }
+        } else if case .ident(let first) = cur.kind, first != "in", !keywords.contains(first) {
+            // 向前看：是 "a in" / "a, b in" 参数列表吗？
+            var q = p, ok = false
+            while q < toks.count {
+                if case .ident(let t) = toks[q].kind, t == "in" { ok = true; break }
+                if case .op(let o) = toks[q].kind, o == "," { q += 1; continue }
+                if case .ident = toks[q].kind { q += 1; continue }
+                break
+            }
+            if ok {
+                while true {
+                    params.append(try expectIdent())
+                    if isOp(",") { _ = advance(); eatNewlines(); continue }
+                    guard case .ident(let w) = advance().kind, w == "in" else {
+                        throw PlayError(message: "闭包参数列表后需要 «in»")
+                    }
+                    break
+                }
+            }
+        }
+
+        var body: [Stmt] = []
+        eatNewlines()
+        while !isOp("}") && !isEOF {
+            body.append(try parseStatement())
+            eatNewlines()
+        }
+        try expectOp("}")
+        return .closureLit(params, body)
+    }
+
     // MARK: 表达式（优先级递降）
 
     func parseExpr() throws -> Expr {
@@ -419,8 +507,21 @@ final class Parser {
                 let name = try expectIdent()
                 if isOp("(") {
                     e = .method(e, name, try parseArgs())
+                } else if isOp("{"), closureMethods.contains(name) {
+                    e = .method(e, name, [try parseClosure()])
                 } else {
                     e = .member(e, name)
+                }
+            } else if isOp("(") {
+                e = .invoke(e, try parseArgs())
+            } else if isOp("{") {
+                // 尾随闭包：视图构造器或数组方法
+                if case .call(let n, let a) = e, viewTypes.contains(n) {
+                    e = .call(n, a + [try parseClosure()])
+                } else if case .method(let b, let m, let a) = e, closureMethods.contains(m) {
+                    e = .method(b, m, a + [try parseClosure()])
+                } else {
+                    break
                 }
             } else {
                 break
@@ -467,11 +568,20 @@ final class Parser {
             }
             _ = advance()
             return .arrayLit(items)
+        case .op(let v) where v == "{":
+            return try parseClosure()
+        case .op(let v) where v == ".":
+            _ = advance()
+            let name = try expectIdent()
+            return .enumCase(name)
         case .ident(let v):
             _ = advance()
             if v == "true" { return .bool(true) }
             if v == "false" { return .bool(false) }
             if isOp("(") { return .call(v, try parseArgs()) }
+            if isOp("{"), viewTypes.contains(v) {
+                return .call(v, [try parseClosure()])
+            }
             return .ident(v)
         default:
             throw PlayError(message: "意外的符号 «\(describe(cur))»")
@@ -483,19 +593,38 @@ final class Parser {
 
 final class Interpreter {
     private(set) var output: [ConsoleLine] = []
-    private var scopes: [[String: Value]] = [[String: Value]()]
+    private var scopes: [Scope] = [Scope()]
     private var funcs: [String: FuncDecl] = [:]
     private var steps = 0
     private let maxSteps = 500_000
+    private var lastValue: Value = .void
+    private var viewStacks: [[ViewNode]] = []
+    private var buttonHandlers: [Int: Value] = [:]
+    private var nextButtonId = 0
+
+    /// Live View 回调：setLiveView(...) 时触发
+    var liveViewHandler: ((ViewNode) -> Void)?
+    /// 最近一次 setLiveView 的视图树
+    private(set) var lastLiveView: ViewNode?
 
     func run(_ code: String) throws {
         let tokens = try Lexer(code).tokenize()
         let stmts = try Parser(tokens).parseProgram()
-        scopes = [[String: Value]()]
+        scopes = [Scope()]
         funcs = [:]
         steps = 0
         output = []
+        viewStacks = []
+        buttonHandlers = [:]
+        nextButtonId = 0
+        lastValue = .void
         _ = try exec(stmts)
+    }
+
+    /// 点击预览里的按钮
+    func tapButton(_ id: Int) throws {
+        guard let closure = buttonHandlers[id] else { return }
+        _ = try callValue(closure, [])
     }
 
     private enum Flow { case normal, ret(Value?), brk, cont }
@@ -516,25 +645,37 @@ final class Interpreter {
 
     private func setVar(_ name: String, _ v: Value) throws {
         for idx in scopes.indices.reversed() {
-            if scopes[idx][name] != nil { scopes[idx][name] = v; return }
+            if scopes[idx].vars[name] != nil { scopes[idx].vars[name] = v; return }
         }
-        scopes[scopes.count - 1][name] = v
+        scopes[scopes.count - 1].vars[name] = v
+    }
+
+    private func lookupOrNull(_ name: String) -> Value? {
+        for scope in scopes.reversed() {
+            if let v = scope.vars[name] { return v }
+        }
+        return nil
     }
 
     private func execStmt(_ s: Stmt) throws -> Flow {
         try tick()
         switch s {
         case .varDecl(let name, _, let e):
-            scopes[scopes.count - 1][name] = try eval(e)
+            let v = try eval(e)
+            scopes[scopes.count - 1].vars[name] = v
             return .normal
         case .assign(let name, let e):
             let v = try eval(e)
             for idx in scopes.indices.reversed() {
-                if scopes[idx][name] != nil { scopes[idx][name] = v; return .normal }
+                if scopes[idx].vars[name] != nil { scopes[idx].vars[name] = v; return .normal }
             }
             throw PlayError(message: "未定义的变量：\(name)")
         case .expr(let e):
-            _ = try eval(e)
+            let v = try eval(e)
+            lastValue = v
+            if case .view(let node) = v, !viewStacks.isEmpty {
+                viewStacks[viewStacks.count - 1].append(node)
+            }
             return .normal
         case .ifStmt(let cond, let body, let elseBody):
             if try eval(cond).truthy() { return try exec(body) }
@@ -562,7 +703,7 @@ final class Interpreter {
             }
             for item in items {
                 try tick()
-                scopes[scopes.count - 1][name] = item
+                scopes[scopes.count - 1].vars[name] = item
                 let f = try exec(body)
                 if case .brk = f { break }
                 if case .ret(let rv) = f { return .ret(rv) }
@@ -570,7 +711,7 @@ final class Interpreter {
             return .normal
         case .funcDecl(let fd):
             funcs[fd.name] = fd
-            scopes[scopes.count - 1][fd.name] = .function(fd)
+            scopes[scopes.count - 1].vars[fd.name] = .function(fd)
             return .normal
         case .ret(let e):
             return .ret(e == nil ? nil : try eval(e!))
@@ -583,11 +724,35 @@ final class Interpreter {
         guard vals.count == fd.params.count else {
             throw PlayError(message: "函数 \(fd.name) 需要 \(fd.params.count) 个参数，但传入了 \(vals.count) 个")
         }
-        scopes.append(Dictionary(uniqueKeysWithValues: zip(fd.params, vals)))
+        let saved = lastValue
+        defer { lastValue = saved }
+        scopes.append(Scope(Dictionary(uniqueKeysWithValues: zip(fd.params, vals))))
         defer { scopes.removeLast() }
         let f = try exec(fd.body)
         if case .ret(let v) = f { return v ?? .void }
-        return .void
+        return lastValue
+    }
+
+    private func callValue(_ c: Value, _ vals: [Value]) throws -> Value {
+        switch c {
+        case .closure(let params, let body, let env):
+            let effective = params.isEmpty ? (0..<vals.count).map { "$\($0)" } : params
+            guard vals.count == effective.count else {
+                throw PlayError(message: "闭包需要 \(effective.count) 个参数，但传入了 \(vals.count) 个")
+            }
+            let saved = lastValue
+            defer { lastValue = saved }
+            scopes.append(env)
+            scopes.append(Scope(Dictionary(uniqueKeysWithValues: zip(effective, vals))))
+            defer { scopes.removeLast(); scopes.removeLast() }
+            let f = try exec(body)
+            if case .ret(let v) = f { return v ?? .void }
+            return lastValue
+        case .function(let fd):
+            return try callFunc(fd, vals)
+        default:
+            throw PlayError(message: "\(c.typeName) 不是可调用的值")
+        }
     }
 
     // MARK: 求值
@@ -598,10 +763,9 @@ final class Interpreter {
         case .num(let n):
             return n == n.rounded() ? .int(Int(n)) : .double(n)
         case .bool(let b): return .bool(b)
+        case .enumCase(let name): return .enumCase(name)
         case .ident(let name):
-            for scope in scopes.reversed() {
-                if let v = scope[name] { return v }
-            }
+            if let v = lookupOrNull(name) { return v }
             throw PlayError(message: "未定义的变量：\(name)")
         case .string(let parts):
             var s = ""
@@ -614,6 +778,8 @@ final class Interpreter {
             return .string(s)
         case .arrayLit(let items):
             return .array(try items.map { try eval($0) })
+        case .closureLit(let params, let body):
+            return .closure(params, body, scopes[scopes.count - 1])
         case .unary(let op, let inner):
             let v = try eval(inner)
             switch (op, v) {
@@ -627,7 +793,12 @@ final class Interpreter {
         case .call(let name, let argExprs):
             let vals = try argExprs.map { try eval($0) }
             if let fd = funcs[name] { return try callFunc(fd, vals) }
+            if let v = lookupOrNull(name), case .closure = v { return try callValue(v, vals) }
             return try callBuiltin(name, vals)
+        case .invoke(let callableExpr, let argExprs):
+            let c = try eval(callableExpr)
+            let vals = try argExprs.map { try eval($0) }
+            return try callValue(c, vals)
         case .member(let baseExpr, let name):
             let v = try eval(baseExpr)
             switch (v, name) {
@@ -638,23 +809,69 @@ final class Interpreter {
             default: throw PlayError(message: "«\(v.typeName)» 没有属性 «\(name)»")
             }
         case .method(let baseExpr, let name, let argExprs):
-            let base = try eval(baseExpr)
-            let args = try argExprs.map { try eval($0) }
-            switch (base, name) {
-            case (.array(let a), "append"):
-                guard args.count == 1 else { throw PlayError(message: "append 需要 1 个参数") }
-                var arr = a; arr.append(args[0])
-                try storeBack(baseExpr, .array(arr))
-                return .void
-            case (.array(let a), "reversed"): return .array(a.reversed())
-            case (.array(let a), "sorted"): return .array(try sortValues(a))
-            case (.string(let s), "uppercased"): return .string(s.uppercased())
-            case (.string(let s), "lowercased"): return .string(s.lowercased())
-            case (.string(let s), "hasPrefix"): return .bool(s.hasPrefix(stringify(args[0])))
-            case (.string(let s), "hasSuffix"): return .bool(s.hasSuffix(stringify(args[0])))
-            default: throw PlayError(message: "«\(base.typeName)» 没有方法 «\(name)»")
+            return try evalMethod(baseExpr, name, argExprs)
+        }
+    }
+
+    private func evalMethod(_ baseExpr: Expr, _ name: String, _ argExprs: [Expr]) throws -> Value {
+        let base = try eval(baseExpr)
+        let args = try argExprs.map { try eval($0) }
+
+        // 视图修饰符
+        if case .view(let node) = base {
+            switch name {
+            case "font":
+                node.font = try caseName(args.first)
+                return .view(node)
+            case "foregroundColor", "foregroundStyle", "tint":
+                node.color = try caseName(args.first)
+                return .view(node)
+            case "background":
+                node.bg = try caseName(args.first)
+                return .view(node)
+            case "padding":
+                node.padding = true
+                return .view(node)
+            default: break
             }
         }
+
+        switch (base, name) {
+        case (.array(var a), "append"):
+            guard args.count == 1 else { throw PlayError(message: "append 需要 1 个参数") }
+            a.append(args[0])
+            try storeBack(baseExpr, .array(a))
+            return .void
+        case (.array(let a), "reversed"): return .array(a.reversed())
+        case (.array(let a), "sorted"): return .array(try sortValues(a))
+        case (.array(let a), "map"):
+            guard args.count == 1 else { throw PlayError(message: "map 需要 1 个闭包") }
+            return .array(try a.map { try callValue(args[0], [$0]) })
+        case (.array(let a), "filter"):
+            guard args.count == 1 else { throw PlayError(message: "filter 需要 1 个闭包") }
+            var out: [Value] = []
+            for item in a { if try callValue(args[0], [item]).truthy() { out.append(item) } }
+            return .array(out)
+        case (.array(let a), "reduce"):
+            guard args.count == 2 else { throw PlayError(message: "reduce 需要 2 个参数") }
+            var acc = args[0]
+            for item in a { acc = try callValue(args[1], [acc, item]) }
+            return acc
+        case (.array(let a), "joined"):
+            return .string(a.map(stringify).joined(separator: args.first.map(stringify) ?? ""))
+        case (.string(let s), "uppercased"): return .string(s.uppercased())
+        case (.string(let s), "lowercased"): return .string(s.lowercased())
+        case (.string(let s), "hasPrefix"): return .bool(s.hasPrefix(stringify(args[0])))
+        case (.string(let s), "hasSuffix"): return .bool(s.hasSuffix(stringify(args[0])))
+        default: throw PlayError(message: "«\(base.typeName)» 没有方法 «\(name)»")
+        }
+    }
+
+    private func caseName(_ v: Value?) throws -> String {
+        guard case .some(.enumCase(let s)) = v else {
+            throw PlayError(message: "这里需要一个如 .red / .title 的枚举值")
+        }
+        return s
     }
 
     private func evalInline(_ src: String) throws -> Value {
@@ -760,11 +977,57 @@ final class Interpreter {
         return 0
     }
 
+    // MARK: 内置函数（含视图构造器）
+
     private func callBuiltin(_ name: String, _ args: [Value]) throws -> Value {
         switch name {
         case "print":
             output.append(ConsoleLine(text: args.map(stringify).joined(separator: " "), isError: false))
             return .void
+
+        // ---- 视图 ----
+        case "Text":
+            guard args.count == 1 else { throw PlayError(message: "Text 需要 1 个参数") }
+            return .view(ViewNode(kind: .text(stringify(args[0]))))
+        case "VStack", "HStack", "ZStack", "Group":
+            let axis = name == "HStack" ? "h" : (name == "ZStack" ? "z" : "v")
+            var spacing: Int? = nil
+            for v in args { if case .int(let n) = v { spacing = n } }
+            guard let closure = args.last else { throw PlayError(message: "\(name) 需要一个闭包") }
+            viewStacks.append([])
+            defer { viewStacks.removeLast() }
+            _ = try callValue(closure, [])
+            let children = viewStacks[viewStacks.count - 1]
+            let node = ViewNode(kind: .stack(axis: axis, children: children))
+            node.spacing = spacing
+            return .view(node)
+        case "Circle", "Rectangle", "RoundedRectangle":
+            let shapeName = name == "Circle" ? "circle" : "rect"
+            return .view(ViewNode(kind: .shape(shapeName, nil)))
+        case "Spacer":
+            return .view(ViewNode(kind: .spacer))
+        case "Divider":
+            return .view(ViewNode(kind: .divider))
+        case "Button":
+            guard let label = args.first else { throw PlayError(message: "Button 需要 1 个文本参数") }
+            guard let closure = args.last, case .closure = closure else {
+                throw PlayError(message: "Button 需要一个动作闭包")
+            }
+            let id = nextButtonId
+            nextButtonId += 1
+            buttonHandlers[id] = closure
+            return .view(ViewNode(kind: .button(stringify(label), id)))
+        case "Color":
+            return args.first ?? .void
+        case "setLiveView":
+            guard case .some(.view(let node)) = args.first else {
+                throw PlayError(message: "setLiveView 需要 1 个视图参数")
+            }
+            lastLiveView = node
+            liveViewHandler?(node)
+            return .void
+
+        // ---- 类型转换与数学 ----
         case "Int":
             switch args.first {
             case .int(let n): return .int(n)
@@ -823,7 +1086,9 @@ final class Interpreter {
         case .bool(let b): return b ? "true" : "false"
         case .array(let a): return "[" + a.map(stringify).joined(separator: ", ") + "]"
         case .range(let a, let b, let closed): return closed ? "\(a)...\(b)" : "\(a)..<\(b)"
-        case .function: return "(Function)"
+        case .function, .closure: return "(Function)"
+        case .view: return "(View)"
+        case .enumCase(let s): return ".\(s)"
         case .void: return "()"
         }
     }

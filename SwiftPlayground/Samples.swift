@@ -79,6 +79,40 @@ extension PlaygroundDocument {
             print("排序后：\\(scores.sorted())")
             print("最高分：\\(scores.sorted().last)")
             """
+        case "ui":
+            return """
+            // Live View 实时预览！
+            // 写 SwiftUI 风格的界面，点上方「预览」查看效果
+            // 点预览里的按钮可以交互
+
+            import SwiftUI
+
+            var count = 0
+
+            func update() {
+                setLiveView(VStack(spacing: 16) {
+                    Text("计数器演示")
+                        .font(.title)
+                        .foregroundColor(.blue)
+                    Text("当前次数：\\(count)")
+                        .font(.headline)
+                    Button("点我 +1") {
+                        count += 1
+                        update()
+                    }
+                    Divider()
+                    HStack {
+                        Circle().foregroundColor(.orange)
+                        RoundedRectangle().foregroundColor(.green)
+                    }
+                    Text("学 SwiftUI，就在 iPhone 上")
+                        .font(.caption)
+                        .foregroundColor(.purple)
+                })
+            }
+
+            update()
+            """
         default:
             return """
             // 空白游乐场 — 随便写点什么吧！

@@ -49,6 +49,13 @@ extension PlaygroundDocument {
             subtitle: "数组、if/else、排序"
         ),
         PlaygroundDocument(
+            id: "ui",
+            title: "界面与预览",
+            icon: "paintbrush.pointed.fill",
+            color: .pink,
+            subtitle: "Live View：写 SwiftUI 风格界面"
+        ),
+        PlaygroundDocument(
             id: "blank",
             title: "空白游乐场",
             icon: "doc.badge.plus",

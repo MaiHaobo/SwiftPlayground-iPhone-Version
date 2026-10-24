@@ -26,6 +26,9 @@
 | 字符串 | 插值 `\(表达式)`、`count`、`uppercased()` 等 |
 | 数组 | 字面量、`append`、`count`、`sorted`、`reversed` |
 | 内置函数 | `print`、`Int`、`Double`、`String`、`sqrt`、`abs`、`max`、`min` |
+| 闭包 | `{ x in x * 2 }`、`$0` 简写、尾随闭包 |
+| 数组高阶 | `map` / `filter` / `reduce` / `sorted` |
+| **Live View** | `setLiveView(...)` 实时渲染：`Text`、`VStack`/`HStack`/`ZStack`、`Circle`/`Rectangle`、`Button`（可交互）、修饰符 `.font` / `.foregroundColor` / `.background` / `.padding` |
 
 ## 📂 项目结构
 

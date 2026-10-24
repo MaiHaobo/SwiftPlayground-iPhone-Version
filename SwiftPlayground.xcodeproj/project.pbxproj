@@ -12,6 +12,7 @@
 		7B0000030000000000000003 /* PlaygroundEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000030000000000000003 /* PlaygroundEditor.swift */; };
 		7B0000040000000000000004 /* Interpreter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000040000000000000004 /* Interpreter.swift */; };
 		7B0000050000000000000005 /* Samples.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000050000000000000005 /* Samples.swift */; };
+		7B0000060000000000000006 /* ViewRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000060000000000000006 /* ViewRenderer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,6 +21,7 @@
 		7A0000030000000000000003 /* PlaygroundEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaygroundEditor.swift; sourceTree = "<group>"; };
 		7A0000040000000000000004 /* Interpreter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Interpreter.swift; sourceTree = "<group>"; };
 		7A0000050000000000000005 /* Samples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Samples.swift; sourceTree = "<group>"; };
+		7A0000060000000000000006 /* ViewRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewRenderer.swift; sourceTree = "<group>"; };
 		7A0000100000000000000010 /* SwiftPlayground.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SwiftPlayground.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -50,6 +52,7 @@
 				7A0000030000000000000003 /* PlaygroundEditor.swift */,
 				7A0000040000000000000004 /* Interpreter.swift */,
 				7A0000050000000000000005 /* Samples.swift */,
+				7A0000060000000000000006 /* ViewRenderer.swift */,
 			);
 			path = SwiftPlayground;
 			sourceTree = "<group>";
@@ -123,6 +126,7 @@
 				7B0000030000000000000003 /* PlaygroundEditor.swift in Sources */,
 				7B0000040000000000000004 /* Interpreter.swift in Sources */,
 				7B0000050000000000000005 /* Samples.swift in Sources */,
+				7B0000060000000000000006 /* ViewRenderer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
