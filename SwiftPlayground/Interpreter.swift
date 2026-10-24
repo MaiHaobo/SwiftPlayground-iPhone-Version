@@ -523,6 +523,13 @@ final class Parser {
                 } else {
                     break
                 }
+            } else if case .newline = cur.kind {
+                // 换行后若紧跟 «.»，视为跨行的链式调用延续
+                let saved = p
+                eatNewlines()
+                if isOp(".") { continue }
+                p = saved
+                break
             } else {
                 break
             }
