@@ -37,15 +37,22 @@ struct ViewRenderer: View {
             )
         case .shape(let name, let size):
             let side = CGFloat(size ?? 64)
-            let shape: AnyView = name == "circle"
-                ? AnyView(Circle())
-                : AnyView(RoundedRectangle(cornerRadius: 10))
-            return AnyView(
-                shape
-                    .fill(colorOf(n.color, fallback: .blue))
-                    .frame(width: side, height: name == "circle" ? side : side * 0.7)
-                    .padding(n.padding ? 8 : 0)
-            )
+            let fill = colorOf(n.color, fallback: .blue)
+            if name == "circle" {
+                return AnyView(
+                    Circle()
+                        .fill(fill)
+                        .frame(width: side, height: side)
+                        .padding(n.padding ? 8 : 0)
+                )
+            } else {
+                return AnyView(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(fill)
+                        .frame(width: side, height: side * 0.7)
+                        .padding(n.padding ? 8 : 0)
+                )
+            }
         case .button(let label, let id):
             return AnyView(
                 Button(label) { onTap(id) }
