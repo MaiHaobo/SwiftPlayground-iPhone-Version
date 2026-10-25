@@ -221,6 +221,9 @@ struct CodeEditorView: UIViewRepresentable {
         tv.autocapitalizationType = .none
         tv.smartQuotesType = .no
         tv.smartDashesType = .no
+        tv.isScrollEnabled = true
+        tv.alwaysBounceVertical = true
+        tv.showsVerticalScrollIndicator = true
         tv.textContainerInset = UIEdgeInsets(top: 14, left: 12, bottom: 8, right: 12)
         tv.delegate = context.coordinator
         tv.attributedText = Highlighter.highlight(code)
@@ -229,7 +232,13 @@ struct CodeEditorView: UIViewRepresentable {
 
     func updateUIView(_ tv: UITextView, context: Context) {
         if tv.text != code {
+            let offset = tv.contentOffset
+            let sel = tv.selectedRange
             tv.attributedText = Highlighter.highlight(code)
+            tv.contentOffset = offset
+            if sel.location <= (tv.text as NSString).length {
+                tv.selectedRange = sel
+            }
         }
     }
 
@@ -241,9 +250,11 @@ struct CodeEditorView: UIViewRepresentable {
 
         func textViewDidChange(_ tv: UITextView) {
             parent.code = tv.text
-            // 保存并恢复光标，避免刷新高亮时跳到开头
+            // 保存并恢复滚动位置与光标，避免刷新高亮时视图跳动
+            let offset = tv.contentOffset
             let sel = tv.selectedRange
             tv.attributedText = Highlighter.highlight(tv.text)
+            tv.contentOffset = offset
             if sel.location <= (tv.text as NSString).length {
                 tv.selectedRange = sel
             }
