@@ -107,18 +107,18 @@ struct SettingsTab: View {
         NavigationStack {
             List {
                 Section {
-                    SecureField("ghp_… 或 github_pat_…", text: $ghToken)
+                    SecureField("粘贴 Token（填 Token 即登录，无需输账号密码）", text: $ghToken)
                         .font(.footnote.monospaced())
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
-                    TextField("swiftplayground-cloud", text: $ghRepo)
+                    TextField("仓库名（默认 swiftplayground-cloud）", text: $ghRepo)
                         .font(.footnote.monospaced())
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
                 } header: {
                     Text("云端真编译（GitHub Actions）")
                 } footer: {
-                    Text("在编辑器点 ☁️ 用真正的 Swift 编译器运行代码。Token 是你自己账号的私人令牌，只保存在手机本地：GitHub → Settings → Developer settings → Personal access tokens 生成，需勾选 repo 和 workflow 权限。首次云运行会自动在你账号下创建仓库存放代码。用完建议随时撤销 Token。")
+                    Text("填入你自己的 Personal Access Token 就等于登录了你的账号——代码会自动传到 Token 所属账号的仓库里编译，不需要再输用户名或密码。生成方法：GitHub → 头像 → Settings → Developer settings → Personal access tokens → Generate new token，勾选 repo 和 workflow 两项权限。首次云运行会自动在你账号下创建 swiftplayground-cloud 仓库。用完建议随时撤销 Token。")
                 }
                 Section("数据") {
                     Button {
