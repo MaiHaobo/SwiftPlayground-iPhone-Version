@@ -102,15 +102,25 @@ struct SettingsTab: View {
     @State private var confirmClear = false
     @AppStorage("gh_cloud_token") private var ghToken = ""
     @AppStorage("gh_cloud_repo") private var ghRepo = ""
+    @State private var showToken = false
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    SecureField("粘贴 Token（填 Token 即登录，无需输账号密码）", text: $ghToken)
-                        .font(.footnote.monospaced())
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
+                    if showToken {
+                        TextField("粘贴 Token（填 Token 即登录，无需输账号密码）", text: $ghToken)
+                            .font(.footnote.monospaced())
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                    } else {
+                        SecureField("粘贴 Token（填 Token 即登录，无需输账号密码）", text: $ghToken)
+                            .font(.footnote.monospaced())
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                    }
+                    Toggle("显示 Token 明文", isOn: $showToken)
+                        .font(.footnote)
                     TextField("仓库名（默认 swiftplayground-cloud）", text: $ghRepo)
                         .font(.footnote.monospaced())
                         .autocorrectionDisabled()
