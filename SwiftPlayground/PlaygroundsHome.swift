@@ -49,6 +49,13 @@ extension PlaygroundDocument {
             subtitle: "数组、if/else、排序"
         ),
         PlaygroundDocument(
+            id: "models",
+            title: "结构与枚举",
+            icon: "shippingbox.fill",
+            color: .teal,
+            subtitle: "struct / enum / switch / 下标"
+        ),
+        PlaygroundDocument(
             id: "ui",
             title: "界面与预览",
             icon: "paintbrush.pointed.fill",

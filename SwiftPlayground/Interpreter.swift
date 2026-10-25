@@ -56,6 +56,8 @@ enum Value {
     case closure([String], [Stmt], Scope)
     case view(ViewNode)
     case enumCase(String)
+    case instance(String, [String: Value])              // struct 实例（值语义）
+    case enumValue(String?, String, [Value])            // 用户枚举：类型名, case 名, 关联值
     case void
 
     var typeName: String {
@@ -69,6 +71,8 @@ enum Value {
         case .function, .closure: return "Function"
         case .view: return "View"
         case .enumCase: return "EnumCase"
+        case .instance(let n, _): return n
+        case .enumValue(let t, _, _): return t ?? "Enum"
         case .void: return "Void"
         }
     }
@@ -124,19 +128,32 @@ indirect enum Expr {
     case invoke(Expr, [Expr])
     case method(Expr, String, [Expr])
     case member(Expr, String)
+    case index(Expr, Expr)
 }
 
 enum Stmt {
     case varDecl(String, Bool, Expr)
     case assign(String, Expr)
+    case memberAssign(Expr, Expr)          // instance.field = value
     case expr(Expr)
     case ifStmt(Expr, [Stmt], [Stmt]?)
     case forStmt(String, Expr, [Stmt])
     case whileStmt(Expr, [Stmt])
     case funcDecl(FuncDecl)
+    case structDecl(String, [(String, Expr?)], [FuncDecl])
+    case enumDecl(String, [(String, Int)])
+    case switchStmt(Expr, [SwitchCase])
     case ret(Expr?)
     case brk
     case cont
+}
+
+// switch 的一个分支：多个模式（逗号分隔），每个模式可带 let 绑定
+struct SwitchCase {
+    var patterns: [Expr]        // nil 视为 default（放空数组 + isDefault）
+    var binds: [[String]]       // 与 patterns 一一对应的 let 绑定名
+    var isDefault: Bool
+    var body: [Stmt]
 }
 
 // MARK: - 词法分析器
@@ -255,7 +272,8 @@ final class Parser {
 
     private let keywords: Set<String> = [
         "var", "let", "func", "if", "else", "for", "in", "while",
-        "return", "break", "continue", "true", "false", "import"
+        "return", "break", "continue", "true", "false", "import",
+        "struct", "enum", "switch", "case", "default"
     ]
 
     // 支持尾随闭包的视图构造器
@@ -339,19 +357,7 @@ final class Parser {
                 try expectOp("=")
                 return .varDecl(name, word == "var", try parseExpr())
             case "func":
-                _ = advance()
-                let name = try expectIdent()
-                try expectOp("(")
-                var params: [String] = []
-                eatNewlines()
-                while !isOp(")") {
-                    params.append(try expectIdent())
-                    if isOp(":") { try skipTypeAnnotation() }
-                    if isOp(",") { _ = advance(); eatNewlines() }
-                }
-                _ = advance()
-                if isOp("->") { _ = advance(); try skipTypeAnnotation() }
-                return .funcDecl(FuncDecl(name: name, params: params, body: try parseBlock()))
+                return .funcDecl(try parseFunc())
             case "if": return try parseIf()
             case "for":
                 _ = advance()
@@ -375,6 +381,9 @@ final class Parser {
                 _ = advance()
                 while !isEOF { if case .newline = cur.kind { break }; _ = advance() }
                 return .expr(.bool(true))
+            case "struct": return try parseStructDecl()
+            case "enum": return try parseEnumDecl()
+            case "switch": return try parseSwitch()
             default: break
             }
         }
@@ -386,10 +395,144 @@ final class Parser {
         }
         if isOp("=") {
             _ = advance()
+            if case .member = e {
+                return .memberAssign(e, try parseExpr())
+            }
             guard case .ident(let name) = e else { throw PlayError(message: "只能给变量赋值") }
             return .assign(name, try parseExpr())
         }
         return .expr(e)
+    }
+
+    // MARK: struct / enum / switch
+
+    private func parseStructDecl() throws -> Stmt {
+        _ = advance() // struct
+        let name = try expectIdent()
+        try expectOp("{")
+        var fields: [(String, Expr?)] = []
+        var methods: [FuncDecl] = []
+        eatNewlines()
+        while !isOp("}") && !isEOF {
+            guard case .ident(let kw) = cur.kind else {
+                throw PlayError(message: "struct 里只能有属性（var/let）和方法（func）")
+            }
+            if kw == "var" || kw == "let" {
+                _ = advance()
+                let fname = try expectIdent()
+                if isOp(":") { try skipTypeAnnotation() }
+                var def: Expr? = nil
+                if isOp("=") { _ = advance(); def = try parseExpr() }
+                fields.append((fname, def))
+                if isOp(",") || isOp(";") { _ = advance(); eatNewlines(); continue }
+            } else if kw == "func" {
+                methods.append(try parseFunc())
+            } else {
+                throw PlayError(message: "struct 里只能有属性（var/let）和方法（func）")
+            }
+            eatNewlines()
+        }
+        try expectOp("}")
+        return .structDecl(name, fields, methods)
+    }
+
+    private func parseEnumDecl() throws -> Stmt {
+        _ = advance() // enum
+        let name = try expectIdent()
+        try expectOp("{")
+        var cases: [(String, Int)] = []
+        eatNewlines()
+        while !isOp("}") && !isEOF {
+            guard case .ident(let kw) = cur.kind, kw == "case" else {
+                throw PlayError(message: "enum 里目前只支持 case 定义")
+            }
+            _ = advance()
+            eatNewlines()
+            while true {
+                let cname = try expectIdent()
+                var assoc = 0
+                if isOp("(") {
+                    _ = advance(); eatNewlines()
+                    assoc = 1
+                    while !isOp(")") {
+                        if isOp(",") { assoc += 1 }
+                        _ = advance(); eatNewlines()
+                    }
+                    _ = advance()
+                }
+                cases.append((cname, assoc))
+                if isOp(",") { _ = advance(); eatNewlines(); continue }
+                break
+            }
+            eatNewlines()
+        }
+        try expectOp("}")
+        return .enumDecl(name, cases)
+    }
+
+    private func parseSwitch() throws -> Stmt {
+        _ = advance() // switch
+        let subject = try parseExpr()
+        try expectOp("{")
+        var cases: [SwitchCase] = []
+        eatNewlines()
+        while !isOp("}") && !isEOF {
+            var isDefault = false
+            if case .ident(let kw) = cur.kind, kw == "case" {
+                _ = advance()
+            } else if case .ident(let kw) = cur.kind, kw == "default" {
+                _ = advance()
+                isDefault = true
+            } else {
+                throw PlayError(message: "switch 里需要 case 或 default")
+            }
+            var patterns: [Expr] = []
+            var binds: [[String]] = []
+            if !isDefault {
+                eatNewlines()
+                while true {
+                    let (pat, b) = try parsePattern()
+                    patterns.append(pat)
+                    binds.append(b)
+                    if isOp(",") { _ = advance(); eatNewlines(); continue }
+                    break
+                }
+            }
+            try expectOp(":")
+            eatNewlines()
+            var body: [Stmt] = []
+            while !isOp("}") && !isEOF {
+                // 停在下一个 case / default 前
+                if case .ident(let w) = cur.kind, w == "case" || w == "default" { break }
+                body.append(try parseStatement())
+                eatNewlines()
+            }
+            cases.append(SwitchCase(patterns: patterns, binds: binds, isDefault: isDefault, body: body))
+            eatNewlines()
+        }
+        try expectOp("}")
+        return .switchStmt(subject, cases)
+    }
+
+    // 模式：.caseName / .caseName(let a, let b) / 字面量与表达式
+    private func parsePattern() throws -> (Expr, [String]) {
+        if isOp(".") {
+            _ = advance()
+            let cname = try expectIdent()
+            var binds: [String] = []
+            if isOp("(") {
+                _ = advance(); eatNewlines()
+                while !isOp(")") {
+                    if case .ident(let w) = cur.kind, (w == "let" || w == "var") { _ = advance() }
+                    binds.append(try expectIdent())
+                    if isOp(",") { _ = advance(); eatNewlines() }
+                }
+                _ = advance()
+            }
+            return (.enumCase(cname), binds)
+        }
+        let e = try parseExpr()
+        return (e, [])
     }
 
     private func parseIf() throws -> Stmt {
@@ -406,6 +549,24 @@ final class Parser {
             }
         }
         return .ifStmt(cond, body, elseBody)
+    }
+
+    private func parseFunc() throws -> FuncDecl {
+        _ = advance() // func
+        let name = try expectIdent()
+        try expectOp("(")
+        var params: [String] = []
+        eatNewlines()
+        while !isOp(")") {
+            var pname = try expectIdent()
+            if pname == "_", case .ident = cur.kind { pname = try expectIdent() }  // 外部标签 _ it
+            params.append(pname)
+            if isOp(":") { try skipTypeAnnotation() }
+            if isOp(",") { _ = advance(); eatNewlines() }
+        }
+        _ = advance()
+        if isOp("->") { _ = advance(); try skipTypeAnnotation() }
+        return FuncDecl(name: name, params: params, body: try parseBlock())
     }
 
     private func parseBlock() throws -> [Stmt] {
@@ -518,6 +679,11 @@ final class Parser {
                 }
             } else if isOp("(") {
                 e = .invoke(e, try parseArgs())
+            } else if isOp("[") {
+                _ = advance()
+                let idx = try parseExpr()
+                try expectOp("]")
+                e = .index(e, idx)
             } else if isOp("{") {
                 // 尾随闭包：视图构造器或数组方法
                 if case .call(let n, let a) = e, viewTypes.contains(n) {
@@ -606,6 +772,8 @@ final class Interpreter {
     private(set) var output: [ConsoleLine] = []
     private var scopes: [Scope] = [Scope()]
     private var funcs: [String: FuncDecl] = [:]
+    private var structs: [String: (fields: [(String, Expr?)], methods: [String: FuncDecl])] = [:]
+    private var enums: [String: [(String, Int)]] = [:]
     private var steps = 0
     private let maxSteps = 500_000
     private var lastValue: Value = .void
@@ -623,6 +791,8 @@ final class Interpreter {
         let stmts = try Parser(tokens).parseProgram()
         scopes = [Scope()]
         funcs = [:]
+        structs = [:]
+        enums = [:]
         steps = 0
         output = []
         viewStacks = []
@@ -724,6 +894,48 @@ final class Interpreter {
             funcs[fd.name] = fd
             scopes[scopes.count - 1].vars[fd.name] = .function(fd)
             return .normal
+        case .structDecl(let name, let fields, let methods):
+            structs[name] = (fields, Dictionary(uniqueKeysWithValues: methods.map { ($0.name, $0) }))
+            return .normal
+        case .enumDecl(let name, let cases):
+            enums[name] = cases
+            return .normal
+        case .memberAssign(let target, let e):
+            let v = try eval(e)
+            guard case .member(let base, let field) = target else {
+                throw PlayError(message: "只能给属性赋值")
+            }
+            guard case .ident(let root) = base else {
+                throw PlayError(message: "目前只支持一层属性赋值，如 point.x = 5")
+            }
+            guard let cur = lookupOrNull(root) else {
+                throw PlayError(message: "未定义的变量：\(root)")
+            }
+            guard case .instance(let tn, var fs) = cur else {
+                throw PlayError(message: "«\(cur.typeName)» 的属性不能赋值")
+            }
+            guard fs.keys.contains(field) else {
+                throw PlayError(message: "«\(tn)» 没有属性 «\(field)»")
+            }
+            fs[field] = v
+            try setVar(root, .instance(tn, fs))
+            return .normal
+        case .switchStmt(let subjectExpr, let cases):
+            let subject = try eval(subjectExpr)
+            for c in cases {
+                if c.isDefault {
+                    return try exec(c.body)
+                }
+                for (idx, pat) in c.patterns.enumerated() {
+                    let binds = c.binds[idx]
+                    if let matched = try matchPattern(pat, subject, binds) {
+                        scopes.append(Scope(matched))
+                        defer { scopes.removeLast() }
+                        return try exec(c.body)
+                    }
+                }
+            }
+            return .normal
         case .ret(let e):
             return .ret(e == nil ? nil : try eval(e!))
         case .brk: return .brk
@@ -803,30 +1015,162 @@ final class Interpreter {
             return try evalBinary(op, l, r)
         case .call(let name, let argExprs):
             let vals = try argExprs.map { try eval($0) }
+            if let sd = structs[name] {
+                return try makeInstance(name, sd.fields, sd.methods, vals)
+            }
             if let fd = funcs[name] { return try callFunc(fd, vals) }
             if let v = lookupOrNull(name), case .closure = v { return try callValue(v, vals) }
             return try callBuiltin(name, vals)
         case .invoke(let callableExpr, let argExprs):
+            // 枚举带关联值构造：Name.case(a, b)
+            if case .member(let base, let cname) = callableExpr,
+               case .ident(let tname) = base, let cases = enums[tname],
+               cases.contains(where: { $0.0 == cname }) {
+                let vals = try argExprs.map { try eval($0) }
+                return .enumValue(tname, cname, vals)
+            }
             let c = try eval(callableExpr)
             let vals = try argExprs.map { try eval($0) }
             return try callValue(c, vals)
         case .member(let baseExpr, let name):
+            // 枚举类型引用：Name.case → 枚举值
+            if case .ident(let tname) = baseExpr, let cases = enums[tname] {
+                guard cases.contains(where: { $0.0 == name }) else {
+                    throw PlayError(message: "«\(tname)» 没有 case «\(name)»")
+                }
+                return .enumValue(tname, name, [])
+            }
             let v = try eval(baseExpr)
+            if case .instance(_, let fs) = v {
+                guard let f = fs[name] else {
+                    throw PlayError(message: "«\(v.typeName)» 没有属性 «\(name)»")
+                }
+                return f
+            }
             switch (v, name) {
             case (.array(let a), "count"): return .int(a.count)
             case (.string(let s), "count"): return .int(s.count)
             case (.array(let a), "first"): return a.first ?? .void
             case (.array(let a), "last"): return a.last ?? .void
-            default: throw PlayError(message: "«\(v.typeName)» 没有属性 «\(name)»")
+            default:
+                // 兜底：变量不存在时按枚举值处理（如 Color.red）
+                if case .ident(let b) = baseExpr, lookupOrNull(b) == nil {
+                    return .enumCase(name)
+                }
+                throw PlayError(message: "«\(v.typeName)» 没有属性 «\(name)»")
             }
         case .method(let baseExpr, let name, let argExprs):
             return try evalMethod(baseExpr, name, argExprs)
+        case .index(let baseExpr, let idxExpr):
+            let b = try eval(baseExpr)
+            guard case .int(let idx) = try eval(idxExpr) else {
+                throw PlayError(message: "下标必须是 Int")
+            }
+            switch b {
+            case .array(let a):
+                guard idx >= 0 && idx < a.count else {
+                    throw PlayError(message: "下标越界：\(idx)（数组长度 \(a.count)）")
+                }
+                return a[idx]
+            case .string(let str):
+                let chars = Array(str)
+                guard idx >= 0 && idx < chars.count else {
+                    throw PlayError(message: "下标越界：\(idx)（字符串长度 \(chars.count)）")
+                }
+                return .string(String(chars[idx]))
+            default: throw PlayError(message: "«\(b.typeName)» 不支持下标")
+            }
+        }
+    }
+
+    // MARK: struct 实例与 switch 匹配
+
+    private func makeInstance(_ name: String, _ fields: [(String, Expr?)], _ methods: [String: FuncDecl], _ vals: [Value]) throws -> Value {
+        var fs: [String: Value] = [:]
+        if vals.count == fields.count {
+            for (i, f) in fields.enumerated() { fs[f.0] = vals[i] }
+        } else if vals.count < fields.count {
+            // 按顺序给前 k 个字段赋值，其余用默认值
+            for (i, f) in fields.enumerated() {
+                if i < vals.count { fs[f.0] = vals[i] }
+                else if let def = f.1 { fs[f.0] = try eval(def) }
+                else { throw PlayError(message: "\(name) 的属性 «\(f.0)» 没有默认值，需要传入") }
+            }
+        } else {
+            throw PlayError(message: "\(name) 需要 \(fields.count) 个属性值，但传入了 \(vals.count) 个")
+        }
+        _ = methods
+        return .instance(name, fs)
+    }
+
+    /// 模式匹配：匹配成功返回要绑定的变量（否则返回 nil）
+    private func matchPattern(_ pat: Expr, _ subject: Value, _ binds: [String]) throws -> [String: Value]? {
+        switch pat {
+        case .enumCase(let pname):
+            switch subject {
+            case .enumCase(let s):
+                if s == pname { return binds.isEmpty ? [:] : nil }
+                return nil
+            case .enumValue(_, let s, let assoc):
+                guard s == pname else { return nil }
+                if binds.isEmpty { return [:] }
+                guard binds.count == assoc.count else {
+                    throw PlayError(message: "case \(pname) 有 \(assoc.count) 个关联值，但绑定了 \(binds.count) 个")
+                }
+                return Dictionary(uniqueKeysWithValues: zip(binds, assoc))
+            default: return nil
+            }
+        default:
+            let pv = try eval(pat)
+            if try valuesEqual(pv, subject) { return [:] }
+            return nil
+        }
+    }
+
+    private func valuesEqual(_ a: Value, _ b: Value) throws -> Bool {
+        switch (a, b) {
+        case (.int(let x), .int(let y)): return x == y
+        case (.string(let x), .string(let y)): return x == y
+        case (.bool(let x), .bool(let y)): return x == y
+        case (.enumCase(let x), .enumCase(let y)): return x == y
+        case (.enumCase(let x), .enumValue(_, let y, _)): return x == y
+        case (.enumValue(_, let x, _), .enumCase(let y)): return x == y
+        case (.enumValue(_, let x, let ax), .enumValue(_, let y, let ay)): return x == y && ax.count == ay.count
+        case (.double(let x), .double(let y)): return x == y
+        case (.int(let x), .double(let y)), (.double(let y), .int(let x)): return Double(x) == y
+        default: return false
         }
     }
 
     private func evalMethod(_ baseExpr: Expr, _ name: String, _ argExprs: [Expr]) throws -> Value {
+        // 枚举带关联值构造：Animal.cat(3)（被解析成方法调用形式）
+        // 注意要在求值 base 之前检查——类型名本身不是变量
+        if case .ident(let tname) = baseExpr, let cases = enums[tname] {
+            guard cases.contains(where: { $0.0 == name }) else {
+                throw PlayError(message: "«\(tname)» 没有 case «\(name)»")
+            }
+            let cargs = try argExprs.map { try eval($0) }
+            return .enumValue(tname, name, cargs)
+        }
+
         let base = try eval(baseExpr)
         let args = try argExprs.map { try eval($0) }
+
+        // struct 实例方法：字段作为可见变量，self 指向实例
+        if case .instance(let tn, let fs) = base, let sd = structs[tn], let fd = sd.methods[name] {
+            guard args.count == fd.params.count else {
+                throw PlayError(message: "方法 \(name) 需要 \(fd.params.count) 个参数，但传入了 \(args.count) 个")
+            }
+            let saved = lastValue
+            defer { lastValue = saved }
+            scopes.append(Scope(fs))
+            scopes.append(Scope(Dictionary(uniqueKeysWithValues: zip(fd.params, args))))
+            scopes[scopes.count - 1].vars["self"] = base
+            defer { scopes.removeLast(); scopes.removeLast() }
+            let f = try exec(fd.body)
+            if case .ret(let v) = f { return v ?? .void }
+            return lastValue
+        }
 
         // 视图修饰符
         if case .view(let node) = base {
@@ -979,6 +1323,10 @@ final class Interpreter {
         if case .array(let a) = l, case .array(let b) = r, op == "+" {
             return .array(a + b)
         }
+        if op == "==" || op == "!=" {
+            let same = try valuesEqual(l, r)
+            return .bool(op == "==" ? same : !same)
+        }
         throw PlayError(message: "运算符 \(op) 无法用于 \(l.typeName) 和 \(r.typeName)")
     }
 
@@ -1100,6 +1448,13 @@ final class Interpreter {
         case .function, .closure: return "(Function)"
         case .view: return "(View)"
         case .enumCase(let s): return ".\(s)"
+        case .instance(let n, let fs):
+            let parts = fs.map { "\($0.key): \(stringify($0.value))" }.sorted().joined(separator: ", ")
+            return "\(n)(\(parts))"
+        case .enumValue(let t, let c, let assoc):
+            let prefix = (t?.isEmpty == false) ? "\(t!)." : "."
+            if assoc.isEmpty { return prefix + c }
+            return prefix + c + "(" + assoc.map(stringify).joined(separator: ", ") + ")"
         case .void: return "()"
         }
     }

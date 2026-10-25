@@ -79,6 +79,37 @@ extension PlaygroundDocument {
             print("排序后：\\(scores.sorted())")
             print("最高分：\\(scores.sorted().last)")
             """
+        case "models":
+            return """
+            // 批次1：struct / enum / switch / 下标
+            struct Item {
+                var name: String
+                var price: Int
+                func info() { print("\(name) 卖 \(price) 元") }
+            }
+
+            var cart = [Item(name: "苹果", price: 5), Item(name: "书", price: 30)]
+            cart[0].info()
+            cart[1].info()
+
+            var total = 0
+            for it in cart { total += it.price }
+            print("合计: \(total)")
+
+            enum Level {
+                case low, mid, high(Int)
+            }
+
+            var lv = Level.high(9)
+            switch lv {
+            case .low: print("低级")
+            case .mid: print("中级")
+            case .high(let v): print("高级! 值是 \(v)")
+            }
+
+            cart[0].name = "大苹果"
+            print(cart[0].name)
+            """
         case "ui":
             return """
             // Live View 实时预览！
