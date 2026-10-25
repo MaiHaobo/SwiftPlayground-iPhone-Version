@@ -10,6 +10,7 @@ struct PlaygroundEditor: View {
     @State private var lines: [ConsoleLine] = []
     @State private var autoRun = true
     @State private var bottomPane = 0  // 0 控制台 / 1 预览
+    @StateObject private var cloud = CloudRunner()
 
     var body: some View {
         GeometryReader { geo in
@@ -43,8 +44,27 @@ struct PlaygroundEditor: View {
                         .tint(.accentColor)
                 }
             }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    runCloud()
+                } label: {
+                    if cloud.running {
+                        ProgressView()
+                    } else {
+                        Image(systemName: "cloud.fill")
+                            .tint(.purple)
+                    }
+                }
+                .disabled(cloud.running)
+            }
         }
         .onAppear {
+            cloud.onLine = { text, isErr in
+                var out = lines
+                out.append(ConsoleLine(text: text, isError: isErr))
+                lines = out
+            }
+            cloud.onFinished = { bottomPane = 0 }
             if code.isEmpty {
                 code = doc.storedCode
                 run()
@@ -117,6 +137,12 @@ struct PlaygroundEditor: View {
             }
         }
         .background(Color(.secondarySystemGroupedBackground))
+    }
+
+    private func runCloud() {
+        bottomPane = 0
+        lines.append(ConsoleLine(text: "—— 云端真编译开始 ——", isError: false))
+        cloud.run(code: code)
     }
 
     private func run() {

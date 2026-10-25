@@ -100,10 +100,26 @@ struct PreviewPane: View {
 struct SettingsTab: View {
     @EnvironmentObject var docs: DocsStore
     @State private var confirmClear = false
+    @AppStorage("gh_cloud_token") private var ghToken = ""
+    @AppStorage("gh_cloud_repo") private var ghRepo = ""
 
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    SecureField("ghp_… 或 github_pat_…", text: $ghToken)
+                        .font(.footnote.monospaced())
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                    TextField("swiftplayground-cloud", text: $ghRepo)
+                        .font(.footnote.monospaced())
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                } header: {
+                    Text("云端真编译（GitHub Actions）")
+                } footer: {
+                    Text("在编辑器点 ☁️ 用真正的 Swift 编译器运行代码。Token 是你自己账号的私人令牌，只保存在手机本地：GitHub → Settings → Developer settings → Personal access tokens 生成，需勾选 repo 和 workflow 权限。首次云运行会自动在你账号下创建仓库存放代码。用完建议随时撤销 Token。")
+                }
                 Section("数据") {
                     Button {
                         confirmClear = true
@@ -137,7 +153,7 @@ struct SettingsTab: View {
                     row(".font / .foregroundColor / .background / .padding", icon: "wand.and.stars")
                 }
                 Section(footer: Text("未签名 IPA 需通过 Sideloadly / AltStore 等工具签名后安装，免费 Apple ID 签名 7 天有效。")) {
-                    row("版本 1.3 · 仅支持 iPhone", icon: "iphone.gen3")
+                    row("版本 1.4 · 仅支持 iPhone", icon: "iphone.gen3")
                 }
             }
             .navigationTitle("设置")
