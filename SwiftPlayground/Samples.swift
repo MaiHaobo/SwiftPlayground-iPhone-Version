@@ -85,7 +85,7 @@ extension PlaygroundDocument {
             struct Item {
                 var name: String
                 var price: Int
-                func info() { print("\(name) 卖 \(price) 元") }
+                func info() { print("\\(name) 卖 \\(price) 元") }
             }
 
             var cart = [Item(name: "苹果", price: 5), Item(name: "书", price: 30)]
@@ -94,7 +94,7 @@ extension PlaygroundDocument {
 
             var total = 0
             for it in cart { total += it.price }
-            print("合计: \(total)")
+            print("合计: \\(total)")
 
             enum Level {
                 case low, mid, high(Int)
@@ -104,7 +104,7 @@ extension PlaygroundDocument {
             switch lv {
             case .low: print("低级")
             case .mid: print("中级")
-            case .high(let v): print("高级! 值是 \(v)")
+            case .high(let v): print("高级! 值是 \\(v)")
             }
 
             cart[0].name = "大苹果"
