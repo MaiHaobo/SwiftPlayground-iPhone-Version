@@ -79,6 +79,95 @@ extension PlaygroundDocument {
             print("排序后：\\(scores.sorted())")
             print("最高分：\\(scores.sorted().last)")
             """
+        case "tests":
+            return """
+            // 语法测试场：打开即自动运行
+            // 每行 ✅ = 通过，❌ = 有问题
+            // 想测新语法就把检查加在最后
+
+            var passed = 0
+            var failed = 0
+
+            func ok(_ cond: Bool, _ name: String) {
+                if cond {
+                    passed += 1
+                    print("✅ " + name)
+                } else {
+                    failed += 1
+                    print("❌ " + name)
+                }
+            }
+
+            // ---- 基础运算 ----
+            ok(1 + 2 * 3 == 7, "运算优先级")
+            ok(10 % 3 == 1, "取余")
+            ok(7 / 2 == 3, "整数除法")
+
+            // ---- 变量与字符串 ----
+            var greeting = "你好"
+            ok(greeting + "，世界" == "你好，世界", "字符串拼接")
+            var name = "Swift"
+            ok("Hi \(name)!" == "Hi Swift!", "字符串插值")
+            ok("Hello".uppercased() == "HELLO", "uppercased")
+            ok("HelloWorld".hasPrefix("Hello"), "hasPrefix")
+
+            // ---- 数组与闭包 ----
+            var nums = [3, 1, 2]
+            ok(nums.count == 3, "count")
+            ok(nums.sorted()[0] == 1, "sorted + 下标")
+            ok(nums[1] == 1, "下标读取")
+            ok(nums.map { $0 * 2 }[2] == 4, "map")
+            ok(nums.filter { $0 > 1 }.count == 2, "filter")
+            ok(nums.reduce(0) { $0 + $1 } == 6, "reduce")
+            nums.append(9)
+            ok(nums.last == 9, "append + last")
+
+            var double = { $0 * 2 }
+            ok(double(21) == 42, "闭包调用")
+
+            // ---- 循环与控制流 ----
+            var sum = 0
+            for i in 1...10 { sum += i }
+            ok(sum == 55, "for-in 范围")
+            var n = 1
+            while n * n < 50 { n += 1 }
+            ok(n == 8, "while")
+            if sum > 50 && !(2 > 3) { ok(true, "if + 逻辑") } else { ok(false, "if + 逻辑") }
+
+            // ---- 函数与递归 ----
+            func fact(_ m: Int) -> Int {
+                if m <= 1 { return 1 }
+                return m * fact(m - 1)
+            }
+            ok(fact(5) == 120, "递归")
+
+            // ---- struct ----
+            struct Item {
+                var title: String
+                var price: Int = 0
+                func desc() { print("「\(title)」\(price)元") }
+            }
+            var book = Item(title: "Swift书", price: 42)
+            book.desc()
+            ok(book.price == 42, "struct 属性")
+            book.price = 50
+            ok(book.price == 50, "struct 属性赋值")
+
+            // ---- enum + switch ----
+            enum Shape2 {
+                case circle, rect(Int)
+            }
+            var s2 = Shape2.rect(4)
+            switch s2 {
+            case .circle:
+                ok(false, "switch 匹配")
+            case .rect(let side):
+                ok(side == 4, "switch 关联值绑定")
+            }
+
+            print("——————")
+            print("通过 \(passed) 项，失败 \(failed) 项")
+            """
         case "models":
             return """
             // 批次1：struct / enum / switch / 下标

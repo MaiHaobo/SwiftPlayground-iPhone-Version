@@ -49,6 +49,13 @@ extension PlaygroundDocument {
             subtitle: "数组、if/else、排序"
         ),
         PlaygroundDocument(
+            id: "tests",
+            title: "语法测试场",
+            icon: "checkmark.seal.fill",
+            color: .mint,
+            subtitle: "一键自测解释器全部能力"
+        ),
+        PlaygroundDocument(
             id: "models",
             title: "结构与枚举",
             icon: "shippingbox.fill",
