@@ -137,7 +137,7 @@ struct SettingsTab: View {
                     row(".font / .foregroundColor / .background / .padding", icon: "wand.and.stars")
                 }
                 Section(footer: Text("未签名 IPA 需通过 Sideloadly / AltStore 等工具签名后安装，免费 Apple ID 签名 7 天有效。")) {
-                    row("版本 1.2 · 仅支持 iPhone", icon: "iphone.gen3")
+                    row("版本 1.3 · 仅支持 iPhone", icon: "iphone.gen3")
                 }
             }
             .navigationTitle("设置")

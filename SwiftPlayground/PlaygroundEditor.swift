@@ -236,6 +236,11 @@ struct CodeEditorView: UIViewRepresentable {
         tv.isScrollEnabled = true
         tv.alwaysBounceVertical = true
         tv.showsVerticalScrollIndicator = true
+        // 长行不折行，横向滚动查看（类似 Xcode）
+        tv.textContainer.widthTracksTextView = false
+        tv.textContainer.size = CGSize(width: 100000, height: 0)
+        tv.alwaysBounceHorizontal = true
+        tv.showsHorizontalScrollIndicator = true
         tv.textContainerInset = UIEdgeInsets(top: 14, left: 12, bottom: 8, right: 12)
         tv.delegate = context.coordinator
         tv.attributedText = Highlighter.highlight(code)

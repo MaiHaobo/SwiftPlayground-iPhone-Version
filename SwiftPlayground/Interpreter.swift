@@ -177,6 +177,10 @@ final class Lexer {
             if "+-*/%<>=(){}[],.!:;".contains(c) {
                 advance(); toks.append(Token(kind: .op(String(c)))); continue
             }
+            let unsupported = ["@": "@propertyWrapper（如 @State）", "#": "#Preview / #if 等编译指令", "?": "可选值 Optional", "&": "取地址"]
+            if let hint = unsupported[String(c)] {
+                throw PlayError(message: "暂不支持 Swift 全部语法：这里出现了 \(hint)。本 App 内置的是 Swift 子集解释器，支持的语法见「设置」页；真正的 SwiftUI 工程需要 Xcode 编译。")
+            }
             throw PlayError(message: "无法识别的字符：\(c)")
         }
         toks.append(Token(kind: .eof))
