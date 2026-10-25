@@ -1,49 +1,117 @@
 import SwiftUI
 
-// MARK: - 预览 Tab：全局 Live View
+// MARK: - Tab2 新建
 
-struct PreviewTab: View {
+struct NewDocTab: View {
+    @EnvironmentObject var docs: DocsStore
+    @State private var name = ""
+    @State private var templateIndex = 0
+    @State private var path: [PlaygroundDocument] = []
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            List {
+                Section("App 名称") {
+                    TextField("例如：我的计算器", text: $name)
+                }
+                Section("选择模板") {
+                    ForEach(DocTemplate.all.indices, id: \.self) { i in
+                        Button {
+                            templateIndex = i
+                        } label: {
+                            HStack(spacing: 14) {
+                                Image(systemName: DocTemplate.all[i].icon)
+                                    .font(.title3)
+                                    .foregroundStyle(DocTemplate.all[i].color)
+                                    .frame(width: 34)
+                                Text(DocTemplate.all[i].name)
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                if templateIndex == i {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundStyle(.tint)
+                                }
+                            }
+                            .padding(.vertical, 2)
+                        }
+                    }
+                }
+                Section {
+                    Button {
+                        createDoc()
+                    } label: {
+                        Label("创建 App", systemImage: "plus.circle.fill")
+                            .frame(maxWidth: .infinity)
+                            .bold()
+                    }
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                } footer: {
+                    Text("创建后会自动打开代码编辑器，模板代码可以直接改。")
+                }
+            }
+            .navigationTitle("新建")
+            .navigationDestination(for: PlaygroundDocument.self) { doc in
+                PlaygroundEditor(doc: doc)
+            }
+        }
+    }
+
+    private func createDoc() {
+        let title = name.trimmingCharacters(in: .whitespaces)
+        let doc = docs.addDoc(title: title, templateIndex: templateIndex)
+        name = ""
+        templateIndex = 0
+        path.append(doc)
+    }
+}
+
+// MARK: - 预览面板（编辑器内嵌，控制台/预览切换用）
+
+struct PreviewPane: View {
     @EnvironmentObject var session: SessionStore
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if let node = session.liveNode {
-                    ScrollView {
-                        ViewRenderer(node: node) { id in
-                            try? session.interpreter?.tapButton(id)
-                        }
-                        .padding(16)
-                        .frame(maxWidth: .infinity)
-                    }
-                } else {
-                    VStack(spacing: 12) {
-                        Image(systemName: "eye.slash")
-                            .font(.system(size: 44))
-                            .foregroundStyle(.secondary)
-                        Text("还没有实时预览")
-                            .font(.headline)
-                        Text("到「游乐场」打开「界面与预览」示例，运行调用了 setLiveView 的代码后，这里会实时显示界面，还能直接点按钮交互。")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 32)
-                    }
-                    .padding(.top, 80)
+        if let node = session.liveNode {
+            ScrollView {
+                ViewRenderer(node: node) { id in
+                    try? session.interpreter?.tapButton(id)
                 }
+                .padding(16)
+                .frame(maxWidth: .infinity)
             }
-            .navigationTitle(session.title.isEmpty ? "预览" : "预览 · \(session.title)")
-            .navigationBarTitleDisplayMode(.inline)
+        } else {
+            VStack(spacing: 10) {
+                Image(systemName: "eye.slash")
+                    .font(.system(size: 36))
+                    .foregroundStyle(.secondary)
+                Text("运行调用 setLiveView 的代码后，这里会显示实时界面")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 28)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }
 
-// MARK: - 关于 Tab
+// MARK: - Tab3 设置
 
-struct AboutTab: View {
+struct SettingsTab: View {
+    @EnvironmentObject var docs: DocsStore
+    @State private var confirmClear = false
+
     var body: some View {
         NavigationStack {
             List {
+                Section("数据") {
+                    Button {
+                        confirmClear = true
+                    } label: {
+                        Label("清除所有代码与自建 App", systemImage: "trash")
+                            .foregroundStyle(.red)
+                    }
+                }
                 Section("这是什么") {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("SwiftPlayground 是专为 iPhone 打造的 Swift 游乐场。内置纯 Swift 实现的 Swift 子集解释器，写完代码点 ▶ 即可运行，无需编译器。")
@@ -64,15 +132,21 @@ struct AboutTab: View {
                 }
                 Section("Live View 控件") {
                     row("Text / VStack / HStack / ZStack", icon: "rectangle.split.3x1")
-                    row("Circle / RoundedRect rectangle / Spacer / Divider", icon: "square.on.circle")
+                    row("Circle / RoundedRectangle / Spacer / Divider", icon: "square.on.circle")
                     row("Button（可点击交互）", icon: "hand.tap")
                     row(".font / .foregroundColor / .background / .padding", icon: "wand.and.stars")
                 }
                 Section(footer: Text("未签名 IPA 需通过 Sideloadly / AltStore 等工具签名后安装，免费 Apple ID 签名 7 天有效。")) {
-                    row("版本 1.1 · 仅支持 iPhone", icon: "iphone.gen3")
+                    row("版本 1.2 · 仅支持 iPhone", icon: "iphone.gen3")
                 }
             }
-            .navigationTitle("关于")
+            .navigationTitle("设置")
+            .alert("确定清除所有数据？", isPresented: $confirmClear) {
+                Button("清除", role: .destructive) { docs.clearAllCode() }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("所有自建 App 与修改过的代码都会被删除，内置示例恢复初始代码。")
+            }
         }
     }
 

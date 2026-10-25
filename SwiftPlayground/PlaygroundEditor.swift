@@ -9,6 +9,7 @@ struct PlaygroundEditor: View {
     @State private var code: String = ""
     @State private var lines: [ConsoleLine] = []
     @State private var autoRun = true
+    @State private var bottomPane = 0  // 0 控制台 / 1 预览
 
     var body: some View {
         GeometryReader { geo in
@@ -16,7 +17,18 @@ struct PlaygroundEditor: View {
                 codeEditor
                     .frame(height: geo.size.height * 0.62)
                 Divider()
-                consoleSection
+                Picker("面板", selection: $bottomPane) {
+                    Text("控制台").tag(0)
+                    Text("预览").tag(1)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                if bottomPane == 0 {
+                    consoleSection
+                } else {
+                    PreviewPane()
+                }
             }
         }
         .background(Color(.systemGroupedBackground).ignoresSafeArea())

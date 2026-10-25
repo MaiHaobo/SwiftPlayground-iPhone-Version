@@ -3,23 +3,28 @@ import SwiftUI
 @main
 struct SwiftPlaygroundApp: App {
     @StateObject private var session = SessionStore()
+    @StateObject private var docs = DocsStore()
 
     var body: some Scene {
         WindowGroup {
             TabView {
                 PlaygroundsHome()
                     .environmentObject(session)
+                    .environmentObject(docs)
                     .tabItem {
-                        Label("游乐场", systemImage: "square.grid.2x2.fill")
+                        Label("首页", systemImage: "square.grid.2x2.fill")
                     }
-                PreviewTab()
+                NewDocTab()
                     .environmentObject(session)
+                    .environmentObject(docs)
                     .tabItem {
-                        Label("预览", systemImage: "eye")
+                        Label("新建", systemImage: "plus.circle.fill")
                     }
-                AboutTab()
+                SettingsTab()
+                    .environmentObject(session)
+                    .environmentObject(docs)
                     .tabItem {
-                        Label("关于", systemImage: "info.circle")
+                        Label("设置", systemImage: "gearshape.fill")
                     }
             }
         }
