@@ -107,7 +107,7 @@ extension PlaygroundDocument {
             var greeting = "你好"
             ok(greeting + "，世界" == "你好，世界", "字符串拼接")
             var name = "Swift"
-            ok("Hi \(name)!" == "Hi Swift!", "字符串插值")
+            ok("Hi \\(name)!" == "Hi Swift!", "字符串插值")
             ok("Hello".uppercased() == "HELLO", "uppercased")
             ok("HelloWorld".hasPrefix("Hello"), "hasPrefix")
 
@@ -145,7 +145,7 @@ extension PlaygroundDocument {
             struct Item {
                 var title: String
                 var price: Int = 0
-                func desc() { print("「\(title)」\(price)元") }
+                func desc() { print("「\\(title)」\\(price)元") }
             }
             var book = Item(title: "Swift书", price: 42)
             book.desc()
@@ -166,7 +166,7 @@ extension PlaygroundDocument {
             }
 
             print("——————")
-            print("通过 \(passed) 项，失败 \(failed) 项")
+            print("通过 \\(passed) 项，失败 \\(failed) 项")
             """
         case "models":
             return """
